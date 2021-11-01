@@ -20,15 +20,39 @@ tidy=TRUE, tidy.opts=list(width.cutoff=60), R.options=list(max.print=100))
 
 ## Data Wrangling, Exploration, Visualization
 
-### Name and EID here
+### Alvin Kalathungal | aak2874
 
 #### Introduction 
+```{r}
+library(tidyverse)
+library(dplyr)
+library(knitr)
+library(ggplot2)
+#install.packages("maptools")
+library(maptools)
+#install.packages("mapdata")
+library(mapdata)
+#install.packages("ggthemes")
+#install.packages("usmap")
+library("usmap")
+library(ggthemes)
+#install.packages("tibble")
+library(tibble)
+#install.packages("viridis")
+library(viridis)
+#install.packages("readr")
+library(readr)
+```
 
 Paragraph or two introducing your datasets and variables, why they are interesting to you, etc.
 
 ```{R}
-# read your datasets in here, e.g., with read_csv()
-#HI
+
+USVaccineData <- read_csv("USVaccineData")
+#head(USVaccineData)
+USCovidData <- read_csv("USCounties.csv")
+#head(USCounties)
+
 ```
 
 #### Tidying: Reshaping
@@ -43,9 +67,13 @@ If your datasets are tidy already, demonstrate that you can reshape data with pi
 #### Joining/Merging
 
 ```{R}
-# your joining code
-
-# your joining code
+#nrow(USCovidData) #3249
+#nrow(USVaccineData) #3282
+#distinct(USCovidData)
+#distinct(USVaccineData)
+#left_join(USCovidData,USVaccineData, by="fips") %>% distinct(fips,.keep_all = TRUE) -> projectData  #3217
+#anti_join(USVaccineData,USCovidData, by="fips") #10 that is in Vaccine but not Covid Data c(cities, bourgough)
+#anti_join(USCovidData,USVaccineData, by="fips")  # 2 in Northern Mariana Islands
 ```
 
 Discussions of joining here. Feel encouraged to break up into more than once code chunk and discuss each in turn.
@@ -53,12 +81,25 @@ Discussions of joining here. Feel encouraged to break up into more than once cod
 ####  Wrangling
 
 ```{R}
-# your wrangling code
-
-# your wrangling code
-
-# your wrangling code
+projectData %>% group_by(state) %>% summarise_at(c("cases","deaths"),.funs =list(mean=mean,sd=sd) ) %>% pivot_longer(-1) %>% separate(name, into = c("var","stat")) %>% pivot_wider(names_from ="var", values_from = "value") %>% slice(1:25) %>% kable()
 ```
+```{r}
+projectData %>% group_by(state) %>% count(state,cases,deaths) %>% summarise(totalcases = sum(cases), totaldeaths = sum(deaths)) %>% mutate(percentSurvival = 1 - totaldeaths/totalcases) %>% arrange(desc(totalcases)) %>% slice(1:10) %>%  ggplot() + geom_point(aes(x=totalcases, y=totaldeaths,color=state)) + scale_x_continuous(labels = scales::comma)
+```
+
+
+```{r}
+projectData %>% group_by(Metro_status,state) %>% summarise_at("cases",.funs = list(mean=mean,sd=sd)) %>% arrange(state) %>% filter(state == "California" | state == "Texas"| state == "New York" | state == "Pennsylvania"| state == "Illinois"| state == "Ohio"| state == "Georgia" | state == "North Carolina" | state == "Michigan" | state == "Florida") %>% ggplot(aes(x=state,y=mean, fill=Metro_status), ) + geom_bar(stat = "summary",position = "dodge") +scale_y_continuous(breaks = seq(0,600000,10000),labels = scales::comma) + theme(axis.text.x=element_text(angle=60, hjust=1,vjust = 1)) 
+```
+```{r}
+projectData %>% group_by(state) %>% count(state,cases) %>% summarise(totalcases = sum(cases))  -> CovidtotalStateCases
+
+plot_usmap(data = CovidtotalStateCases, values = "totalcases", color="red" ) +  scale_fill_continuous(low = "white", high = "orangered",name = "Total Cases by State", label = scales::comma) + theme(legend.position = "right") + ggtitle("Total COVID-19 cases in US") + theme_dark() +  theme(axis.title.x=element_blank(),axis.text.x=element_blank(), axis.ticks.x=element_blank()) + theme(axis.title.y=element_blank(),axis.text.y=element_blank(), axis.ticks.y=element_blank())
+```
+```{r}
+plot_usmap(regions = "counties", data = projectData, values = "cases", include = c("TX")) + scale_fill_continuous(low = "white", high= "red",name = "Total Cases by County", label = scales::comma) + theme(legend.position = "left") + ggtitle("Cases by County in Texas")
+```
+
 
 Your discussion of wrangling section here. Feel encouraged to break up into more than once code chunk and discuss each in turn.
 
