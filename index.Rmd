@@ -60,7 +60,7 @@ USCovidData <- read_csv("USCounties.csv")
 If your datasets are tidy already, demonstrate that you can reshape data with pivot wider/longer here (e.g., untidy and then retidy). Alternatively, it may be easier to wait until the wrangling section so you can reshape your summary statistics. Note here if you are going to do this.
 
 ```{R}
-# your tidying code (if applicable; can also wait until wrangling section)
+# your tidying code (if applicable; can also wait until wrangling section) Waiting til Wrangling section to Tidy/Reshape
 ```
 
     
@@ -71,8 +71,8 @@ If your datasets are tidy already, demonstrate that you can reshape data with pi
 #nrow(USVaccineData) #3282
 #distinct(USCovidData)
 #distinct(USVaccineData)
-#left_join(USCovidData,USVaccineData, by="fips") %>% distinct(fips,.keep_all = TRUE) -> projectData  #3217
-#anti_join(USVaccineData,USCovidData, by="fips") #10 that is in Vaccine but not Covid Data c(cities, bourgough)
+left_join(USCovidData,USVaccineData, by="fips") %>% distinct(fips,.keep_all = TRUE) -> projectData
+#anti_join(USVaccineData,USCovidData, by="fips") #10 that is in Vaccine but not Covid Data are metros or bourgoghs
 #anti_join(USCovidData,USVaccineData, by="fips")  # 2 in Northern Mariana Islands
 ```
 
@@ -80,49 +80,89 @@ Discussions of joining here. Feel encouraged to break up into more than once cod
 
 ####  Wrangling
 
-```{R}
-projectData %>% group_by(state) %>% summarise_at(c("cases","deaths"),.funs =list(mean=mean,sd=sd) ) %>% pivot_longer(-1) %>% separate(name, into = c("var","stat")) %>% pivot_wider(names_from ="var", values_from = "value") %>% slice(1:25) %>% kable()
-```
 ```{r}
-projectData %>% group_by(state) %>% count(state,cases,deaths) %>% summarise(totalcases = sum(cases), totaldeaths = sum(deaths)) %>% mutate(percentSurvival = 1 - totaldeaths/totalcases) %>% arrange(desc(totalcases)) %>% slice(1:10) %>%  ggplot() + geom_point(aes(x=totalcases, y=totaldeaths,color=state)) + scale_x_continuous(labels = scales::comma)
+projectData %>% select(-c(11:14)) %>% relocate(Recip_State, .after=state) -> projectData
+```
+
+```{r}
+projectData %>% summarise_at(c("cases","deaths"),.funs =list(mean=mean,min=min, max=max),na.rm=TRUE) %>% kable()
+```
+
+
+
+
+
+```{r}
+projectData %>% group_by(state) %>% summarise_at(c("cases","deaths"),.funs =list(mean=mean,median=median,sd=sd,min=min, max=max),na.rm=TRUE) %>% pivot_longer(-1) %>% separate(name, into = c("var","stat")) %>% pivot_wider(names_from ="var", values_from = "value") %>% slice(1:20) %>% kable()
+```
+
+```{r}
+projectData %>% summarize_all(function(x) sum(is.na(x)))
+
 ```
 
 
 ```{r}
-projectData %>% group_by(Metro_status,state) %>% summarise_at("cases",.funs = list(mean=mean,sd=sd)) %>% arrange(state) %>% filter(state == "California" | state == "Texas"| state == "New York" | state == "Pennsylvania"| state == "Illinois"| state == "Ohio"| state == "Georgia" | state == "North Carolina" | state == "Michigan" | state == "Florida") %>% ggplot(aes(x=state,y=mean, fill=Metro_status), ) + geom_bar(stat = "summary",position = "dodge") +scale_y_continuous(breaks = seq(0,600000,10000),labels = scales::comma) + theme(axis.text.x=element_text(angle=60, hjust=1,vjust = 1)) 
+projectData %>% group_by(state) %>% count(state,cases,deaths) %>% summarise(totalcases = sum(cases), totaldeaths = sum(deaths)) %>% mutate(percentSurvival = 1 - totaldeaths/totalcases) %>% arrange(desc(totalcases)) %>% slice(1:10) -> scatterplotData
+
+#head(scatterplotData)
+
 ```
+
+```{r}
+projectData %>% group_by(Metro_status,state) %>% summarise_at("Series_Complete_Yes",.funs = list(mean=mean,sd=sd)) %>% arrange(state) %>% filter(state == "California" | state == "Texas"| state == "New York" | state == "Pennsylvania"| state == "Illinois"| state == "Ohio"| state == "Georgia" | state == "North Carolina" | state == "Michigan" | state == "Florida") -> barplotData
+
+#head(barplotData)
+```
+
 ```{r}
 projectData %>% group_by(state) %>% count(state,cases) %>% summarise(totalcases = sum(cases))  -> CovidtotalStateCases
 
-plot_usmap(data = CovidtotalStateCases, values = "totalcases", color="red" ) +  scale_fill_continuous(low = "white", high = "orangered",name = "Total Cases by State", label = scales::comma) + theme(legend.position = "right") + ggtitle("Total COVID-19 cases in US") + theme_dark() +  theme(axis.title.x=element_blank(),axis.text.x=element_blank(), axis.ticks.x=element_blank()) + theme(axis.title.y=element_blank(),axis.text.y=element_blank(), axis.ticks.y=element_blank())
+#head(CovidtotalStateCases)
 ```
-```{r}
-plot_usmap(regions = "counties", data = projectData, values = "cases", include = c("TX")) + scale_fill_continuous(low = "white", high= "red",name = "Total Cases by County", label = scales::comma) + theme(legend.position = "left") + ggtitle("Cases by County in Texas")
-```
-
 
 Your discussion of wrangling section here. Feel encouraged to break up into more than once code chunk and discuss each in turn.
 
 
 #### Visualizing
 
-```{R}
-# your plot 1
+```{r}
+head(scatterplotData)
+projectData %>% select(state,Recip_State) %>% group_by(state,Recip_State) -> stateInital
+inner_join(scatterplotData,stateInital, by="state") -> scatterplotData
+
+
+ggplot(scatterplotData,aes(x=totalcases, y=totaldeaths,color=state)) + geom_point() + scale_x_continuous(labels = scales::comma) + geom_text(aes(label=Recip_State),hjust=0.5, vjust=1.5) + theme(legend.position = "none") + ggtitle("Comparsion of Total Deaths with Total Number of Cases") + xlab("Total Number of Cases") + ylab("Total Number of Deaths")
 ```
 
 Your discussion of plot 1
 
+```{r}
+projectData %>% select(state,county,Metro_status) %>% count(state,Metro_status, sort = TRUE) -> countiesInStates
+head(countiesInStates)
+head(barplotData)
+
+inner_join(barplotData,countiesInStates, by= c("state","Metro_status")) %>% mutate(se = sd/sqrt(n)) -> barplotData
+#head(barplotData)
+
+```
+
 ```{R}
-# your plot 2
+barplotData %>% ggplot(aes(x=state,y=mean, fill=Metro_status), ) + geom_bar(stat = "summary",position = "dodge") + geom_errorbar(aes(ymin = mean - se, ymax = mean + se),width=.5,position = position_dodge(0.8)) + theme_light() +scale_y_continuous(breaks = seq(0,600000,100000),labels = scales::comma) + theme(axis.text.x=element_text(angle=60, hjust=1,vjust = 1)) + ggtitle("Mean number of Cases in Top 10 populated States") + xlab("Top Ten populated States") + ylab("Mean Number of Cases") + guides(fill=guide_legend(title='Metro Status'))
 ```
 
 Your discussion of plot 2
 
 ```{R}
-# your plot 3
+plot_usmap(data = CovidtotalStateCases, values = "totalcases", color="red" ) +  scale_fill_continuous(low = "white", high = "orangered",name = "Total Cases by State", label = scales::comma) + theme(legend.position = "right") + ggtitle("Total COVID-19 cases in US") + theme_dark() +  theme(axis.title.x=element_blank(),axis.text.x=element_blank(), axis.ticks.x=element_blank()) + theme(axis.title.y=element_blank(),axis.text.y=element_blank(), axis.ticks.y=element_blank())
 ```
 
 Your discussion of plot 3
+
+```{r}
+plot_usmap(regions = "counties", data = projectData, values = "cases", include = c("TX")) +  theme_minimal() + scale_fill_continuous(low = "white", high= "red",name = "Total Cases by County", label = scales::comma) + theme(legend.position = "left") + ggtitle("Cases by County in Texas")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(), axis.ticks.x=element_blank()) + theme(axis.title.y=element_blank(),axis.text.y=element_blank(), axis.ticks.y=element_blank())
+```
+
 
 #### Concluding Remarks
 
