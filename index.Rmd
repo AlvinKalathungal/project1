@@ -20,9 +20,9 @@ tidy=TRUE, tidy.opts=list(width.cutoff=60), R.options=list(max.print=100))
 
 ## Data Wrangling, Exploration, Visualization
 
-### Alvin Kalathungal | aak2874
+## Alvin Kalathungal | aak2874
 
-#### Introduction 
+### Introduction 
 ```{r}
 library(tidyverse)
 library(dplyr)
@@ -55,7 +55,7 @@ USCovidData <- read_csv("USCounties.csv")
 
 ```
 
-#### Tidying: Reshaping
+### Tidying: Reshaping
 
 If your datasets are tidy already, demonstrate that you can reshape data with pivot wider/longer here (e.g., untidy and then retidy). Alternatively, it may be easier to wait until the wrangling section so you can reshape your summary statistics. Note here if you are going to do this.
 
@@ -64,7 +64,7 @@ If your datasets are tidy already, demonstrate that you can reshape data with pi
 ```
 
     
-#### Joining/Merging
+### Joining/Merging
 
 ```{R}
 #nrow(USCovidData) #3249
@@ -78,7 +78,7 @@ left_join(USCovidData,USVaccineData, by="fips") %>% distinct(fips,.keep_all = TR
 
 Discussions of joining here. Feel encouraged to break up into more than once code chunk and discuss each in turn.
 
-####  Wrangling
+###  Wrangling
 
 ```{r}
 projectData %>% select(-c(11:14)) %>% relocate(Recip_State, .after=state) -> projectData
@@ -124,7 +124,7 @@ projectData %>% group_by(state) %>% count(state,cases) %>% summarise(totalcases 
 Your discussion of wrangling section here. Feel encouraged to break up into more than once code chunk and discuss each in turn.
 
 
-#### Visualizing
+### Visualizing
 
 ```{r}
 head(scatterplotData)
@@ -148,7 +148,7 @@ inner_join(barplotData,countiesInStates, by= c("state","Metro_status")) %>% muta
 ```
 
 ```{R}
-barplotData %>% ggplot(aes(x=state,y=mean, fill=Metro_status), ) + geom_bar(stat = "summary",position = "dodge") + geom_errorbar(aes(ymin = mean - se, ymax = mean + se),width=.5,position = position_dodge(0.8)) + theme_light() +scale_y_continuous(breaks = seq(0,600000,100000),labels = scales::comma) + theme(axis.text.x=element_text(angle=60, hjust=1,vjust = 1)) + ggtitle("Mean number of Cases in Top 10 populated States") + xlab("Top Ten populated States") + ylab("Mean Number of Cases") + guides(fill=guide_legend(title='Metro Status'))
+barplotData %>% ggplot(aes(x=state,y=mean, fill=Metro_status), ) + geom_bar(stat = "summary",position = "dodge") + geom_errorbar(aes(ymin = mean - se, ymax = mean + se),width=.5,position = position_dodge(0.8)) + theme_light() +scale_y_continuous(breaks = seq(0,600000,100000),labels = scales::comma) + theme(axis.text.x=element_text(angle=60, hjust=1,vjust = 1)) + ggtitle("Mean number of Fully Vaccinated in all counties in the Top 10 pop States") + xlab("Top Ten populated States") + ylab("Mean Number of Vaccination") + guides(fill=guide_legend(title='Metro Status'))
 ```
 
 Your discussion of plot 2
@@ -160,7 +160,7 @@ plot_usmap(data = CovidtotalStateCases, values = "totalcases", color="red" ) +  
 Your discussion of plot 3
 
 ```{r}
-plot_usmap(regions = "counties", data = projectData, values = "cases", include = c("TX")) +  theme_minimal() + scale_fill_continuous(low = "white", high= "red",name = "Total Cases by County", label = scales::comma) + theme(legend.position = "left") + ggtitle("Cases by County in Texas")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(), axis.ticks.x=element_blank()) + theme(axis.title.y=element_blank(),axis.text.y=element_blank(), axis.ticks.y=element_blank())
+plot_usmap(regions = "counties", data = projectData, values = "Series_Complete_Yes", include = c("TX")) +  theme_minimal() + scale_fill_continuous(low = "white", high= "red",name = "Fully Vaccinated by County", label = scales::comma) + theme(legend.position = "left") + ggtitle("Fully Vaccinated by County in Texas")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(), axis.ticks.x=element_blank()) + theme(axis.title.y=element_blank(),axis.text.y=element_blank(), axis.ticks.y=element_blank())
 ```
 
 
