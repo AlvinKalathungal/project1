@@ -44,7 +44,7 @@ library(viridis)
 library(readr)
 ```
 
-Paragraph or two introducing your datasets and variables, why they are interesting to you, etc.
+Paragraph or two introducing your datasets and variables, why they are interesting to you, etc. 
 
 ```{R}
 
@@ -54,13 +54,15 @@ USCovidData <- read_csv("USCounties.csv")
 #head(USCounties)
 
 ```
+This past 20 months has been a wild time and it is continuing to be a wild time with the COVID19 pandemic. The US has been through multiple waves and the number of people who have gotten covidm and died from it been growing. The number of vaccines being given out and the number of people who are fully vaccinated id growing. There are two main sources for my data set is from the New York Times and the CDC dataset. The CDC had data on has vaccine data from all the counties from the United States with vaccination status, age groups and population details. The NYT github gave data on deaths and cases from every county in the us.                                                                                                                       
+The main reason why I was interested in this is because I am taking a Pandemic Science class at UT. The class has taught me a deeper aspect of the covid pandemic and I learned a lot from the class, even did a project about Vietnam in Covid. I wanted to learn more about the pandemic in the US and that is why I gathered this data. 
 
 ### Tidying: Reshaping
 
 If your datasets are tidy already, demonstrate that you can reshape data with pivot wider/longer here (e.g., untidy and then retidy). Alternatively, it may be easier to wait until the wrangling section so you can reshape your summary statistics. Note here if you are going to do this.
 
 ```{R}
-# your tidying code (if applicable; can also wait until wrangling section) Waiting til Wrangling section to Tidy/Reshape
+#Waiting til Wrangling section to Tidy/Reshape
 ```
 
     
@@ -76,18 +78,19 @@ left_join(USCovidData,USVaccineData, by="fips") %>% distinct(fips,.keep_all = TR
 #anti_join(USCovidData,USVaccineData, by="fips")  # 2 in Northern Mariana Islands
 ```
 
-Discussions of joining here. Feel encouraged to break up into more than once code chunk and discuss each in turn.
+The US Covid Data as 3249 rows, with the US Vaccine data has 3282 rows. There isn't any unique IDs in the set as they all had the counties in the US.  When joined there was a total number of 3,217 rows of datapoints. When doing a USVaccineData, USCovidData anti-join we see a 10 data points. These are were of US boroughs or metro ares. When the USCovidData and teh USvaccineData we see 2 data points. It is both located in Northern Mariana Islands. 
 
 ###  Wrangling
 
 ```{r}
 projectData %>% select(-c(11:14)) %>% relocate(Recip_State, .after=state) -> projectData
 ```
+The datasets had repeats and redundant data and I moved the state abbrv next to the state full name. 
 
 ```{r}
-projectData %>% summarise_at(c("cases","deaths"),.funs =list(mean=mean,min=min, max=max),na.rm=TRUE) %>% kable()
+projectData %>% summarise_at(c("cases","deaths"),.funs =list(mean=mean, median=median,sd=sd,min=min, max=max),na.rm=TRUE) %>% kable()
 ```
-
+The gathered 2 variables and was summaried for 5 data points. Mean, Median, sd, Min and Max. The data was then piped into Kable
 
 
 
@@ -95,34 +98,36 @@ projectData %>% summarise_at(c("cases","deaths"),.funs =list(mean=mean,min=min, 
 ```{r}
 projectData %>% group_by(state) %>% summarise_at(c("cases","deaths"),.funs =list(mean=mean,median=median,sd=sd,min=min, max=max),na.rm=TRUE) %>% pivot_longer(-1) %>% separate(name, into = c("var","stat")) %>% pivot_wider(names_from ="var", values_from = "value") %>% slice(1:20) %>% kable()
 ```
+We group all the data by state and looked at the data for the two previous variables. Cases and death. We then gathhered all 5 summary stats (mean, median,sd,min and max). We used tidying functions to get the data in order.  We then slived the data into first 20 points, and piped into kable. 
 
 ```{r}
 projectData %>% summarize_all(function(x) sum(is.na(x)))
 
 ```
-
+The whole data set was checked for NAs
 
 ```{r}
 projectData %>% group_by(state) %>% count(state,cases,deaths) %>% summarise(totalcases = sum(cases), totaldeaths = sum(deaths)) %>% mutate(percentSurvival = 1 - totaldeaths/totalcases) %>% arrange(desc(totalcases)) %>% slice(1:10) -> scatterplotData
 
-#head(scatterplotData)
+head(scatterplotData)
 
 ```
-
+ The data was gathered by state, and we gathered the percent survival in each state. Percent survival was 1 - (total deaths/totalcases), and arranged by greatest to least. I sliced the top ten states. This data will be used to scatterplot
 ```{r}
 projectData %>% group_by(Metro_status,state) %>% summarise_at("Series_Complete_Yes",.funs = list(mean=mean,sd=sd)) %>% arrange(state) %>% filter(state == "California" | state == "Texas"| state == "New York" | state == "Pennsylvania"| state == "Illinois"| state == "Ohio"| state == "Georgia" | state == "North Carolina" | state == "Michigan" | state == "Florida") -> barplotData
 
 #head(barplotData)
 ```
+The data set was grouped by metro status by each county per state. I summarized the data from the total number of people who are fully vaccinated. I filtered the data from top ten states from the previous markdown. This will be used for barplot data
 
 ```{r}
 projectData %>% group_by(state) %>% count(state,cases) %>% summarise(totalcases = sum(cases))  -> CovidtotalStateCases
 
 #head(CovidtotalStateCases)
 ```
+I collect the total number of cases from the last 20 months. I summed all the cases from all the counties. This data will be used to get a visual in the map.
 
-Your discussion of wrangling section here. Feel encouraged to break up into more than once code chunk and discuss each in turn.
-
+One of the assumption that I had was vaccine usage usage in metro areas and non metro was different. This data pointed it out. Learning the percent survival of all the states was useful, through I can't correlate. 
 
 ### Visualizing
 
@@ -134,8 +139,8 @@ inner_join(scatterplotData,stateInital, by="state") -> scatterplotData
 
 ggplot(scatterplotData,aes(x=totalcases, y=totaldeaths,color=state)) + geom_point() + scale_x_continuous(labels = scales::comma) + geom_text(aes(label=Recip_State),hjust=0.5, vjust=1.5) + theme(legend.position = "none") + ggtitle("Comparsion of Total Deaths with Total Number of Cases") + xlab("Total Number of Cases") + ylab("Total Number of Deaths")
 ```
+The plot was created from the scatterplot data set that had the total number of deaths and cases in the top 10 states. The data was displayed as a scatterplit and geom_text was used label the points. The legend was removed. We see the most populated states with a lot of people had high number of deaths and cases. California is expect as LA has a lot of cases. Texas is interesting as it has same number of deaths but less cases than caifornia. 
 
-Your discussion of plot 1
 
 ```{r}
 projectData %>% select(state,county,Metro_status) %>% count(state,Metro_status, sort = TRUE) -> countiesInStates
@@ -151,22 +156,22 @@ inner_join(barplotData,countiesInStates, by= c("state","Metro_status")) %>% muta
 barplotData %>% ggplot(aes(x=state,y=mean, fill=Metro_status), ) + geom_bar(stat = "summary",position = "dodge") + geom_errorbar(aes(ymin = mean - se, ymax = mean + se),width=.5,position = position_dodge(0.8)) + theme_light() +scale_y_continuous(breaks = seq(0,600000,100000),labels = scales::comma) + theme(axis.text.x=element_text(angle=60, hjust=1,vjust = 1)) + ggtitle("Mean number of Fully Vaccinated in all counties in the Top 10 pop States") + xlab("Top Ten populated States") + ylab("Mean Number of Vaccination") + guides(fill=guide_legend(title='Metro Status'))
 ```
 
-Your discussion of plot 2
+We see that California has the nighest number of mean vaccinatation per county. We see that other states lack compared to California with standard error in the state. We see all the non metro counties are substationally lower than the metro counties. 
 
 ```{R}
 plot_usmap(data = CovidtotalStateCases, values = "totalcases", color="red" ) +  scale_fill_continuous(low = "white", high = "orangered",name = "Total Cases by State", label = scales::comma) + theme(legend.position = "right") + ggtitle("Total COVID-19 cases in US") + theme_dark() +  theme(axis.title.x=element_blank(),axis.text.x=element_blank(), axis.ticks.x=element_blank()) + theme(axis.title.y=element_blank(),axis.text.y=element_blank(), axis.ticks.y=element_blank())
 ```
+We use the Covid state totals to display the number of cases as a scale. We see the darker states have a darker color. We see that the highest populated states has the most amount of cases. 
 
-Your discussion of plot 3
 
 ```{r}
 plot_usmap(regions = "counties", data = projectData, values = "Series_Complete_Yes", include = c("TX")) +  theme_minimal() + scale_fill_continuous(low = "white", high= "red",name = "Fully Vaccinated by County", label = scales::comma) + theme(legend.position = "left") + ggtitle("Fully Vaccinated by County in Texas")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(), axis.ticks.x=element_blank()) + theme(axis.title.y=element_blank(),axis.text.y=element_blank(), axis.ticks.y=element_blank())
 ```
-
+This was just to see the vaccinated data of texas per county. We see most of counties are white but this is due to Harris county high vaccination effort that the scale make most counties white. This shows that all the metro areas had high vaccine effort. 
 
 #### Concluding Remarks
 
-If any!
+This data was interesting to work with. I would like to learn how to make the scale better for the texas county data so we can get more data from all teh counties. 
 
 
 
